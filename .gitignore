@@ -1,0 +1,48 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, build output
+*.test
+*.out
+
+# Output of the go coverage tool
+coverage.*
+
+# Go workspace file
+*.code-workspace
+
+# Vendor directory (for Go modules)
+vendor/
+
+# Dependency directories (remove the comment below to include it)
+# pkg/
+
+# IDE/editor config
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+
+# Logs
+*.log
+
+# Environment files
+*.env
+!.env.example
+
+# Build directory
+/bin/
+
+# Internal development docs
+docs/
+
+# Cursor AI assistant rules and metadata
+.cursor/
+
+# Go test cache
+**/testdata/
