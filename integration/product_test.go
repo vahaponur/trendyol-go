@@ -49,7 +49,8 @@ var sellerIDFlag = flag.String("sellerid", "", "Başka satıcının ürünlerini
 // loadEnv çağrısı tüm testler başlamadan önce .env dosyasını okur
 func init() {
 	// godotenv dosyayı bulamazsa hata döndürmez; CI/CD ortamlarında sorun yaratmasın diye
-	_ = godotenv.Load()
+	// integration/ klasöründen test çalıştığımız için parent directory'den .env'i al
+	_ = godotenv.Load("../.env")
 }
 
 // newTestClient testlerde kullanılacak Trendyol Client'ını ortam değişkenlerinden üretir

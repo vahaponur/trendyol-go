@@ -13,7 +13,8 @@
 coverage.*
 
 # Go workspace file
-*.code-workspace
+go.work
+go.work.sum
 
 # Vendor directory (for Go modules)
 vendor/
@@ -34,6 +35,11 @@ vendor/
 # Environment files
 *.env
 !.env.example
+
+# Production test folder
+prod-deneme/
+prod-deneme/**
+prod-deneme/*.go
 
 # Build directory
 /bin/
