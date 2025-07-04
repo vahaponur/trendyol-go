@@ -449,6 +449,7 @@ type Product struct {
 	Blacklisted         bool               `json:"blacklisted,omitempty"`
 	HasHTMLContent      bool               `json:"hasHtmlContent,omitempty"`
 	ProductURL          string             `json:"productUrl,omitempty"`
+	DeliveryDuration    int                `json:"deliveryDuration,omitempty"`
 }
 
 // ProductImage represents a product image
