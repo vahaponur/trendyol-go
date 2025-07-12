@@ -84,6 +84,44 @@ func main() {
     fmt.Printf("Toplam ürün: %d (sayfa %d/%d)\n", page.TotalElement, page.Page+1, page.TotalPages)
 }
 ```
+### Ürün Güncelleme (Update) – Örnek İstek
+
+```jsonc
+{
+  "items": [
+    {
+      "barcode": "ABC-001",             // zorunlu
+      "title": "Pamuk Hoodie",          // zorunlu
+      "productMainId": "HOOD-001",      // zorunlu
+      "brandId": 1791,                  // zorunlu
+      "categoryId": 411,                // zorunlu
+      "stockCode": "STK-ABC-001",       // zorunlu
+      "dimensionalWeight": 12,           // zorunlu
+      "description": "Güncellenmiş açıklama", // zorunlu
+      "deliveryDuration": 2,             // opsiyonel
+      "vatRate": 20,                     // zorunlu
+      "currencyType": "TRY",            // zorunlu
+      "deliveryOption": {                // opsiyonel
+        "deliveryDuration": 1,           // opsiyonel
+        "fastDeliveryType": "FAST_DELIVERY" // opsiyonel
+      },
+      "images": [
+        { "url": "https://example.com/img1.jpg" } // zorunlu
+      ],
+      "attributes": [
+        { "attributeId": 1192, "attributeValueId": 10617344 } // zorunlu
+      ],
+      "cargoCompanyId": 10,              // zorunlu
+      "shipmentAddressId": 123,          // opsiyonel
+      "returningAddressId": 456          // opsiyonel
+    }
+  ]
+}
+```
+
+> Yukarıdaki alanlar Trendyol'un resmi dokümanındaki parametre tablosuna göre etiketlenmiştir (bkz: [Trendyol Marketplace Ürün Bilgisi Güncelleme](https://developers.trendyol.com/docs/marketplace/urun-entegrasyonu/trendyol-urun-bilgisi-guncelleme)).
+>
+> Trendyol dokümanı: Bu method ile Trendyol mağazanızda **createProduct V2** servisiyle oluşturduğunuz ürünleri güncelleyebilirsiniz. Bu servis üzerinden sadece ürün bilgileri güncellenmektedir. **Stok** ve **fiyat** değerlerini güncellemek için **updatePriceAndInventory** servisini kullanmanız gerekmektedir (SDK içindeki `Update` metodu stok/fiyat güncelleyemez).
 
 ### Ortam Değişkenleri (Entegrasyon Testleri)
 
@@ -103,7 +141,7 @@ API_SECRET=YOUR_API_SECRET
 
 | Servis | Test Edilen Metotlar | Durum |
 |--------|---------------------|-------|
-| `Products` | `Create`, `GetByBarcode`, `List`, `GetBatchStatus` | ✅ Çalışıyor |
+| `Products` | `Create`, `GetByBarcode`, `List`, `Update`, `GetBatchStatus` | ✅ Çalışıyor |
 | Diğer tüm servis ve metotlar | | ⚠️ Henüz manuel/entegrasyon testi yapılmadı |
 
 İlerledikçe tablo güncellenecektir.
@@ -143,7 +181,7 @@ clientWithOverride := trendyol.NewClient(
     "API_SECRET",
     false,
     trendyol.WithEndpointOverrides(map[string]string{
-        // Anahtar; README'nin "Endpoint Listesi" tablosundaki isimlerden biri
+        // Anahtar; "Endpoint Listesi (bkz. endpoints.go dosyasi)" tablosundaki isimlerden biri
         "CreateTestOrder": "/v2/test/orders/core",
     }),
 )
