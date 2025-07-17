@@ -46,6 +46,9 @@ var (
 var barcodeFlag = flag.String("barcode", "", "Tekil ürün testi için barkod belirt")
 var sellerIDFlag = flag.String("sellerid", "", "Başka satıcının ürünlerini test etmek için seller ID belirt")
 
+// Silinecek ürünler için virgülle ayrılmış barkod listesi
+var deleteBarcodesFlag = flag.String("delete", "", "Silinecek ürün barkodları (virgülle ayrılmış)")
+
 // loadEnv çağrısı tüm testler başlamadan önce .env dosyasını okur
 func init() {
 	// godotenv dosyayı bulamazsa hata döndürmez; CI/CD ortamlarında sorun yaratmasın diye
@@ -109,6 +112,14 @@ func waitBatchSuccess(ctx context.Context, client *Client, batchID string) error
 // -----------------------------------------------------------------------------
 //  Yardımcı fonksiyonlar
 // -----------------------------------------------------------------------------
+
+// min iki int değerden küçük olanı döner (Go 1.21 öncesi sürümler için kendi implementasyonumuz)
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
 
 // ensureTestProductUploaded: testProduct mevcut değilse oluşturur ve batch'in tamamlanmasını bekler.
 func ensureTestProductUploaded(t *testing.T, client *Client, ctx context.Context) {
@@ -209,4 +220,41 @@ func TestProductGetMultiple(t *testing.T) {
 	for i, p := range products[:min(3, len(products))] {
 		t.Logf("Ürün %d: %s - %s", i+1, p.Barcode, p.Title)
 	}
+}
+
+// TestProductDelete virgülle ayrılmış barkod listesini siler ve batch sonuçlarını doğrular.
+func TestProductDelete(t *testing.T) {
+	client := newTestClient(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	if *deleteBarcodesFlag == "" {
+		t.Skip("delete parametresi belirtilmedi, test atlandı")
+	}
+
+	// Virgülle ayrılmış barkod listesini ayrıştır
+	var barcodes []string
+	parts := strings.Split(*deleteBarcodesFlag, ",")
+	for _, p := range parts {
+		bc := strings.TrimSpace(p)
+		if bc != "" {
+			barcodes = append(barcodes, bc)
+		}
+	}
+	if len(barcodes) == 0 {
+		t.Fatal("delete parametresi geçersiz, en az bir barkod belirtmelisiniz")
+	}
+
+	fmt.Printf("--- Silinecek %d ürün: %s ---\n", len(barcodes), strings.Join(barcodes, ", "))
+
+	delResp, err := client.Products.Delete(ctx, barcodes)
+	if err != nil {
+		t.Fatalf("Ürünler silinemedi: %v", err)
+	}
+	if delResp.BatchRequestID == "" {
+		t.Fatalf("BatchRequestID boş döndü")
+	}
+
+	fmt.Printf("BatchRequestID (Delete): %s\n", delResp.BatchRequestID)
+	fmt.Println("⚠️  Delete için Trendyol batch status API mevcut olmadığından ek doğrulama yapılamıyor.")
 }

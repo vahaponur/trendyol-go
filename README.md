@@ -137,12 +137,54 @@ API_SECRET=YOUR_API_SECRET
 
 ---
 
+### Webhook Bildirimleri (Sipariş Olayları)
+
+Trendyol, sipariş paketleri belirli statülere ulaştığında (CREATED, SHIPPED vb.) tanımladığınız URL’ye **HTTP POST** isteği gönderir. SDK’daki `Webhooks` servisi ile abonelik yönetimi çok basittir:
+
+```go
+ctx := context.Background()
+client := trendyol.NewClient("SELLER_ID", "API_KEY", "API_SECRET", false)
+
+// 1) Yeni webhook oluştur
+id, err := client.Webhooks.Create(ctx, trendyol.CreateWebhookRequest{
+    URL: "https://example.com/order-hook",
+    AuthenticationType: "API_KEY",
+    APIKey: "my-secret-token",
+    SubscribedStatuses: []string{"CREATED", "SHIPPED"}, // boş bırakırsanız hepsi atanır
+})
+if err != nil { panic(err) }
+
+// 2) Aktif/pasif durumu değiştirme
+_ = client.Webhooks.Deactivate(ctx, id) // pasife al
+_ = client.Webhooks.Activate(ctx, id)   // tekrar aktive et
+
+// 3) Listeleme
+hooks, _ := client.Webhooks.List(ctx)
+for _, h := range hooks {
+    fmt.Println(h.ID, h.URL, h.Active)
+}
+
+// 4) Güncelleme
+_ = client.Webhooks.Update(ctx, id, trendyol.UpdateWebhookRequest{
+    URL: "https://example.com/new-endpoint",
+})
+
+// 5) Silme
+_ = client.Webhooks.Delete(ctx, id)
+```
+
+> **Limit:** Bir satıcı en fazla 15 webhook tanımlayabilir (pasif olanlar dâhil). Trendyol isteği 5 dakika arayla yeniden dener.
+
+---
+
 ## Desteklenen Servisler
 
 | Servis | Test Edilen Metotlar | Durum |
 |--------|---------------------|-------|
 | `Products` | `Create`, `GetByBarcode`, `List`, `Update`, `GetBatchStatus` | ✅ Çalışıyor |
-| Diğer tüm servis ve metotlar | | ⚠️ Henüz manuel/entegrasyon testi yapılmadı |
+| `Orders`   | `List` | ✅ Çalışıyor |
+| `Webhooks` | `Create`, `List`, `Update`, `Delete`, `Activate`, `Deactivate` | ✅ Çalışıyor |
+| Diğer tüm servisler | | ⚠️ Henüz manuel/entegrasyon testi yapılmadı |
 
 İlerledikçe tablo güncellenecektir.
 
@@ -151,7 +193,7 @@ API_SECRET=YOUR_API_SECRET
 ## Yol Haritası
 
 - [x] Ürün oluşturma entegrasyon testi
-- [ ] Sipariş servisleri
+- [x] Sipariş listeleme entegrasyon testi
 - [ ] Kargo & finans servisleri
 - [ ] Tamamlayıcı örnek kodlar ve dokümantasyon
 

@@ -90,6 +90,16 @@ const (
 	EndpointGetShipmentProvidersKey = "GetShipmentProviders"
 )
 
+// API Endpoints - Webhook Module
+const (
+	EndpointCreateWebhookKey     = "CreateWebhook"
+	EndpointListWebhooksKey      = "ListWebhooks"
+	EndpointUpdateWebhookKey     = "UpdateWebhook"
+	EndpointDeleteWebhookKey     = "DeleteWebhook"
+	EndpointActivateWebhookKey   = "ActivateWebhook"
+	EndpointDeactivateWebhookKey = "DeactivateWebhook"
+)
+
 // defaultEndpoints haritası override edilebilir.
 var defaultEndpoints = map[string]string{
 	// Product Module
@@ -157,4 +167,12 @@ var defaultEndpoints = map[string]string{
 
 	// Shipment Module
 	EndpointGetShipmentProvidersKey: "/shipment-providers",
+
+	// Webhook Module
+	EndpointCreateWebhookKey:     "/integrator/webhook/sellers/%s/webhooks",
+	EndpointListWebhooksKey:      "/integrator/webhook/sellers/%s/webhooks",
+	EndpointUpdateWebhookKey:     "/integrator/webhook/sellers/%s/webhooks/%s",
+	EndpointDeleteWebhookKey:     "/integrator/webhook/sellers/%s/webhooks/%s",
+	EndpointActivateWebhookKey:   "/integrator/webhook/sellers/%s/webhooks/%s/activate",
+	EndpointDeactivateWebhookKey: "/integrator/webhook/sellers/%s/webhooks/%s/deactivate",
 }

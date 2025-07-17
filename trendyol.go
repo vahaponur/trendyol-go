@@ -142,6 +142,7 @@ type Client struct {
 	Member            MemberService
 	Test              TestService
 	ShipmentProviders ShipmentProviderService
+	Webhooks          WebhookService
 }
 
 // NewClient creates a new Trendyol API client with the provided credentials
@@ -182,6 +183,7 @@ func NewClient(sellerID, apiKey, apiSecret string, isSandbox bool, opts ...Clien
 	c.Member = &memberService{client: c}
 	c.Test = &testService{client: c}
 	c.ShipmentProviders = &shipmentProviderService{client: c}
+	c.Webhooks = &webhookService{client: c}
 
 	return c
 }
@@ -755,6 +757,10 @@ type ListOrdersOptions struct {
 	OrderByDirection string
 	Page             int
 	Size             int
+
+	// Belirli sipariş veya paketlere göre filtreleme
+	OrderNumber        string  // Tekil sipariş numarası ile arama
+	ShipmentPackageIDs []int64 // Birden fazla paket ID'si ile arama
 }
 
 type ProductListOptions struct {
@@ -1003,6 +1009,16 @@ func (s *orderService) List(ctx context.Context, opts ListOrdersOptions) ([]Orde
 		query.Set("orderByDirection", opts.OrderByDirection)
 	}
 
+	// Yeni filtreler
+	if opts.OrderNumber != "" {
+		query.Set("orderNumber", opts.OrderNumber)
+	}
+	if len(opts.ShipmentPackageIDs) > 0 {
+		for _, id := range opts.ShipmentPackageIDs {
+			query.Add("shipmentPackageIds", strconv.FormatInt(id, 10))
+		}
+	}
+
 	result := &response{}
 	req := &Request{
 		Method: http.MethodGet,
@@ -1044,6 +1060,16 @@ func (s *orderService) ListLegacy(ctx context.Context, opts ListOrdersOptions) (
 	}
 	if opts.OrderByDirection != "" {
 		query.Set("orderByDirection", opts.OrderByDirection)
+	}
+
+	// Yeni filtreler
+	if opts.OrderNumber != "" {
+		query.Set("orderNumber", opts.OrderNumber)
+	}
+	if len(opts.ShipmentPackageIDs) > 0 {
+		for _, id := range opts.ShipmentPackageIDs {
+			query.Add("shipmentPackageIds", strconv.FormatInt(id, 10))
+		}
 	}
 
 	result := &response{}
@@ -2117,4 +2143,115 @@ func (c *Client) GetEndpoints() map[string]string {
 		}
 	}
 	return merged
+}
+
+// Webhook related types
+
+// Webhook represents a webhook subscription
+type Webhook struct {
+	ID                 string   `json:"id"`
+	URL                string   `json:"url"`
+	Username           string   `json:"username,omitempty"`
+	Password           string   `json:"password,omitempty"`
+	AuthenticationType string   `json:"authenticationType"`
+	APIKey             string   `json:"apiKey,omitempty"`
+	SubscribedStatuses []string `json:"subscribedStatuses,omitempty"`
+	Active             bool     `json:"active"`
+}
+
+// CreateWebhookRequest describes payload for webhook creation
+type CreateWebhookRequest struct {
+	URL                string   `json:"url"`
+	Username           string   `json:"username,omitempty"`
+	Password           string   `json:"password,omitempty"`
+	AuthenticationType string   `json:"authenticationType"`
+	APIKey             string   `json:"apiKey,omitempty"`
+	SubscribedStatuses []string `json:"subscribedStatuses,omitempty"`
+}
+
+// UpdateWebhookRequest describes payload for webhook update
+type UpdateWebhookRequest struct {
+	URL                string   `json:"url,omitempty"`
+	Username           string   `json:"username,omitempty"`
+	Password           string   `json:"password,omitempty"`
+	AuthenticationType string   `json:"authenticationType,omitempty"`
+	APIKey             string   `json:"apiKey,omitempty"`
+	SubscribedStatuses []string `json:"subscribedStatuses,omitempty"`
+	Active             *bool    `json:"active,omitempty"`
+}
+
+// WebhookService defines webhook management methods
+type WebhookService interface {
+	Create(ctx context.Context, req CreateWebhookRequest) (string, error)
+	List(ctx context.Context) ([]Webhook, error)
+	Update(ctx context.Context, id string, req UpdateWebhookRequest) error
+	Delete(ctx context.Context, id string) error
+	Activate(ctx context.Context, id string) error
+	Deactivate(ctx context.Context, id string) error
+}
+
+type webhookService struct {
+	client *Client
+}
+
+func (s *webhookService) Create(ctx context.Context, body CreateWebhookRequest) (string, error) {
+	var resp struct {
+		ID string `json:"id"`
+	}
+	req := &Request{
+		Method: http.MethodPost,
+		Path:   s.client.resolve(EndpointCreateWebhookKey, s.client.sellerID),
+		Body:   body,
+		Result: &resp,
+	}
+	if err := s.client.Do(ctx, req); err != nil {
+		return "", err
+	}
+	return resp.ID, nil
+}
+
+func (s *webhookService) List(ctx context.Context) ([]Webhook, error) {
+	var result []Webhook
+	req := &Request{
+		Method: http.MethodGet,
+		Path:   s.client.resolve(EndpointListWebhooksKey, s.client.sellerID),
+		Result: &result,
+	}
+	if err := s.client.Do(ctx, req); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (s *webhookService) Update(ctx context.Context, id string, body UpdateWebhookRequest) error {
+	req := &Request{
+		Method: http.MethodPut,
+		Path:   s.client.resolve(EndpointUpdateWebhookKey, s.client.sellerID, id),
+		Body:   body,
+	}
+	return s.client.Do(ctx, req)
+}
+
+func (s *webhookService) Delete(ctx context.Context, id string) error {
+	req := &Request{
+		Method: http.MethodDelete,
+		Path:   s.client.resolve(EndpointDeleteWebhookKey, s.client.sellerID, id),
+	}
+	return s.client.Do(ctx, req)
+}
+
+func (s *webhookService) Activate(ctx context.Context, id string) error {
+	req := &Request{
+		Method: http.MethodPut,
+		Path:   s.client.resolve(EndpointActivateWebhookKey, s.client.sellerID, id),
+	}
+	return s.client.Do(ctx, req)
+}
+
+func (s *webhookService) Deactivate(ctx context.Context, id string) error {
+	req := &Request{
+		Method: http.MethodPut,
+		Path:   s.client.resolve(EndpointDeactivateWebhookKey, s.client.sellerID, id),
+	}
+	return s.client.Do(ctx, req)
 }

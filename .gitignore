@@ -50,5 +50,8 @@ docs/
 # Cursor AI assistant rules and metadata
 .cursor/
 
+# CLI yardımcı araçlar (versiyonlanmayacak)
+cmd/
+
 # Go test cache
 **/testdata/
