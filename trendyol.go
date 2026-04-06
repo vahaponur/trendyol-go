@@ -1955,7 +1955,7 @@ func (s *testService) SetClaimWaitingInAction(ctx context.Context, shipmentPacka
 
 // Order represents a single order from the new API structure
 type Order struct {
-	ID                               int64            `json:"id"` // shipmentPackageId
+	ID                               int64            `json:"shipmentPackageId"`
 	ShipmentAddress                  *OrderAddress    `json:"shipmentAddress,omitempty"`
 	InvoiceAddress                   *OrderAddress    `json:"invoiceAddress,omitempty"`
 	OrderNumber                      string           `json:"orderNumber"`
