@@ -1959,9 +1959,9 @@ type Order struct {
 	ShipmentAddress                  *OrderAddress    `json:"shipmentAddress,omitempty"`
 	InvoiceAddress                   *OrderAddress    `json:"invoiceAddress,omitempty"`
 	OrderNumber                      string           `json:"orderNumber"`
-	GrossAmount                      float64          `json:"grossAmount"`
-	TotalDiscount                    float64          `json:"totalDiscount"`
-	TotalTyDiscount                  float64          `json:"totalTyDiscount"`
+	GrossAmount                      float64          `json:"packageGrossAmount"`
+	TotalDiscount                    float64          `json:"packageTotalDiscount"`
+	TotalTyDiscount                  float64          `json:"packageTyDiscount"`
 	TaxNumber                        *string          `json:"taxNumber,omitempty"`
 	CustomerFirstName                string           `json:"customerFirstName"`
 	CustomerLastName                 string           `json:"customerLastName"`
@@ -1983,7 +1983,7 @@ type Order struct {
 	ScheduledDeliveryStoreID         string           `json:"scheduledDeliveryStoreId"`
 	EstimatedDeliveryStartDate       int64            `json:"estimatedDeliveryStartDate"`
 	EstimatedDeliveryEndDate         int64            `json:"estimatedDeliveryEndDate"`
-	TotalPrice                       float64          `json:"totalPrice"`
+	TotalPrice                       float64          `json:"packageTotalPrice"`
 	DeliveryAddressType              string           `json:"deliveryAddressType"`
 	AgreedDeliveryDate               int64            `json:"agreedDeliveryDate"`
 	FastDelivery                     bool             `json:"fastDelivery"`
