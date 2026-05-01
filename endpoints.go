@@ -169,10 +169,10 @@ var defaultEndpoints = map[string]string{
 	EndpointGetShipmentProvidersKey: "/shipment-providers",
 
 	// Webhook Module
-	EndpointCreateWebhookKey:     "/integrator/webhook/sellers/%s/webhooks",
-	EndpointListWebhooksKey:      "/integrator/webhook/sellers/%s/webhooks",
-	EndpointUpdateWebhookKey:     "/integrator/webhook/sellers/%s/webhooks/%s",
-	EndpointDeleteWebhookKey:     "/integrator/webhook/sellers/%s/webhooks/%s",
-	EndpointActivateWebhookKey:   "/integrator/webhook/sellers/%s/webhooks/%s/activate",
-	EndpointDeactivateWebhookKey: "/integrator/webhook/sellers/%s/webhooks/%s/deactivate",
+	EndpointCreateWebhookKey:     "/integration/webhook/sellers/%s/webhooks",
+	EndpointListWebhooksKey:      "/integration/webhook/sellers/%s/webhooks",
+	EndpointUpdateWebhookKey:     "/integration/webhook/sellers/%s/webhooks/%s",
+	EndpointDeleteWebhookKey:     "/integration/webhook/sellers/%s/webhooks/%s",
+	EndpointActivateWebhookKey:   "/integration/webhook/sellers/%s/webhooks/%s/activate",
+	EndpointDeactivateWebhookKey: "/integration/webhook/sellers/%s/webhooks/%s/deactivate",
 }
