@@ -699,6 +699,7 @@ type ProductService interface {
 // OrderService defines operations for order management
 type OrderService interface {
 	List(ctx context.Context, opts ListOrdersOptions) ([]Order, *PaginatedResponse, error)
+	ListStream(ctx context.Context, opts ListOrdersStreamOptions) ([]Order, *StreamResponse, error)
 	ListLegacy(ctx context.Context, opts ListOrdersOptions) ([]ShipmentPackage, *PaginatedResponse, error)
 	UpdateStatus(ctx context.Context, packageID int64, req UpdatePackageStatusRequest) error
 	UpdateTrackingNumber(ctx context.Context, packageID int64, trackingNumber string) error
@@ -1956,12 +1957,16 @@ func (s *testService) SetClaimWaitingInAction(ctx context.Context, shipmentPacka
 // Order represents a single order from the new API structure
 type Order struct {
 	ID                               int64            `json:"shipmentPackageId"`
+	SupplierID                       int64            `json:"supplierId,omitempty"`
+	PaymentMethod                    string           `json:"paymentMethod,omitempty"`
+	OrderCountryCode                 string           `json:"orderCountryCode,omitempty"`
 	ShipmentAddress                  *OrderAddress    `json:"shipmentAddress,omitempty"`
 	InvoiceAddress                   *OrderAddress    `json:"invoiceAddress,omitempty"`
 	OrderNumber                      string           `json:"orderNumber"`
 	GrossAmount                      float64          `json:"packageGrossAmount"`
 	TotalDiscount                    float64          `json:"packageTotalDiscount"`
 	TotalTyDiscount                  float64          `json:"packageTyDiscount"`
+	SellerDiscount                   float64          `json:"packageSellerDiscount"`
 	TaxNumber                        *string          `json:"taxNumber,omitempty"`
 	CustomerFirstName                string           `json:"customerFirstName"`
 	CustomerLastName                 string           `json:"customerLastName"`
@@ -2008,34 +2013,40 @@ type Order struct {
 	IsCod                            bool             `json:"isCod"`
 	CreatedBy                        string           `json:"createdBy"`
 	OriginPackageIDs                 []int64          `json:"originPackageIds,omitempty"`
+	InvoiceLink                      string           `json:"invoiceLink,omitempty"`
+	InvoiceNumber                    string           `json:"invoiceNumber,omitempty"`
+	InvoiceStatus                    string           `json:"invoiceStatus,omitempty"`
 }
 
 // OrderAddress represents detailed address information in orders
 type OrderAddress struct {
-	ID             int64         `json:"id"`
-	FirstName      string        `json:"firstName"`
-	LastName       string        `json:"lastName"`
-	Company        string        `json:"company"`
-	Address1       string        `json:"address1"`
-	Address2       string        `json:"address2"`
-	AddressLines   *AddressLines `json:"addressLines,omitempty"`
-	City           string        `json:"city"`
-	CityCode       int           `json:"cityCode"`
-	District       string        `json:"district"`
-	DistrictID     int           `json:"districtId"`
-	CountyID       int           `json:"countyId"`
-	CountyName     string        `json:"countyName"`
-	ShortAddress   string        `json:"shortAddress"`
-	StateName      string        `json:"stateName"`
-	PostalCode     string        `json:"postalCode"`
-	CountryCode    string        `json:"countryCode"`
-	NeighborhoodID int           `json:"neighborhoodId"`
-	Neighborhood   string        `json:"neighborhood"`
-	Phone          int64         `json:"phone"`
-	Latitude       string        `json:"latitude"`
-	Longitude      string        `json:"longitude"`
-	FullAddress    string        `json:"fullAddress"`
-	FullName       string        `json:"fullName"`
+	ID                int64         `json:"id"`
+	FirstName         string        `json:"firstName"`
+	LastName          string        `json:"lastName"`
+	Company           string        `json:"company"`
+	Address1          string        `json:"address1"`
+	Address2          string        `json:"address2"`
+	AddressLines      *AddressLines `json:"addressLines,omitempty"`
+	City              string        `json:"city"`
+	CityCode          int           `json:"cityCode"`
+	District          string        `json:"district"`
+	DistrictID        int           `json:"districtId"`
+	CountyID          int           `json:"countyId"`
+	CountyName        string        `json:"countyName"`
+	ShortAddress      string        `json:"shortAddress"`
+	StateName         string        `json:"stateName"`
+	PostalCode        string        `json:"postalCode"`
+	CountryCode       string        `json:"countryCode"`
+	NeighborhoodID    int           `json:"neighborhoodId"`
+	Neighborhood      string        `json:"neighborhood"`
+	Phone             int64         `json:"phone"`
+	Latitude          string        `json:"latitude"`
+	Longitude         string        `json:"longitude"`
+	FullAddress       string        `json:"fullAddress"`
+	FullName          string        `json:"fullName"`
+	TaxOffice         string        `json:"taxOffice,omitempty"`
+	TaxNumber         string        `json:"taxNumber,omitempty"`
+	EInvoiceAvailable bool          `json:"eInvoiceAvailable,omitempty"`
 }
 
 // AddressLines represents additional address line information
@@ -2053,10 +2064,12 @@ type OrderLine struct {
 	MerchantSKU             string           `json:"merchantSku"` // stockCode
 	ProductName             string           `json:"productName"`
 	ProductCode             int              `json:"productCode"` // variantId
+	ContentID               int64            `json:"contentId,omitempty"`
 	ProductOrigin           string           `json:"productOrigin"`
 	MerchantID              int              `json:"merchantId"` // sellerId
 	Amount                  float64          `json:"amount"`
 	Discount                float64          `json:"discount"`
+	TotalDiscount           float64          `json:"lineTotalDiscount"`
 	TyDiscount              float64          `json:"tyDiscount"`
 	DiscountDetails         []DiscountDetail `json:"discountDetails"`
 	CurrencyCode            string           `json:"currencyCode"`

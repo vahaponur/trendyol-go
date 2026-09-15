@@ -22,6 +22,7 @@ const (
 // API Endpoints - Order Module
 const (
 	EndpointGetOrdersKey            = "GetOrders"
+	EndpointGetOrdersStreamKey      = "GetOrdersStream"
 	EndpointUpdatePackageStatusKey  = "UpdatePackageStatus"
 	EndpointUpdateTrackingNumberKey = "UpdateTrackingNumber"
 	EndpointCancelPackageItemsKey   = "CancelPackageItems"
@@ -116,7 +117,8 @@ var defaultEndpoints = map[string]string{
 	EndpointUpdatePriceInventoryKey: "/integration/inventory/sellers/%s/products/price-and-inventory",
 
 	// Order Module
-	EndpointGetOrdersKey:            "/integration/order/sellers/%s/orders",
+	EndpointGetOrdersKey:            "/integration/order/sellers/%s/v2/orders",
+	EndpointGetOrdersStreamKey:      "/integration/order/sellers/%s/orders/stream",
 	EndpointUpdatePackageStatusKey:  "/integration/order/sellers/%s/shipment-packages/%d",
 	EndpointUpdateTrackingNumberKey: "/integration/order/sellers/%s/shipment-packages/%d/update-tracking-number",
 	EndpointCancelPackageItemsKey:   "/integration/order/sellers/%s/shipment-packages/%d/items/unsupplied",

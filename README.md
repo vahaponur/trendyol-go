@@ -1,10 +1,9 @@
 # Trendyol Go SDK
 
-> **Önemli Bilgilendirme**  
-> Trendyol, **25 Şubat 2025** tarihinde Marketplace API uç noktalarının neredeyse tamamını kapsayan büyük bir versiyon güncellemesi yayınladı.  
-> Bu SDK, söz konusu değişiklikleri gözeterek **2 Temmuz 2025** itibarıyla en güncel haliyle yayınlanmıştır.  
-> Gelecekte Trendyol'un benzer çapta bir değişiklik yapma ihtimalini göz önünde bulundurarak uç nokta (**endpoint**) ve temel adres (**base URL**) değerleri paket içinde kolaylıkla **override** edilebilecek şekilde tasarlanmıştır.  
-> Modeller (struct'lar) ve kimlik doğrulama (Basic Auth) mantığı değişmediği sürece, SDK'yı **yeniden çatallamaya veya dosya düzenlemeye gerek kalmadan** yalnızca `WithEndpointOverrides(...)` opsiyonu ya da çalışma zamanı `client.SetBaseURL()` çağrısıyla kolayca uyarlayabilirsiniz. ([Detaylı bilgi için tıklayın](#api-değiştiyse-nasıl-uyarlanır))
+> **v0.3.0 — Sipariş API güncellemesi (15 Eylül 2026)**
+> `Orders.List` ve `Orders.ListLegacy` artık `/integration/order/sellers/{sellerId}/v2/orders` kullanır. Toplu senkronizasyon için `Orders.ListStream` eklendi. Telefonun metin gelmesi nedeniyle sipariş listesinin okunamaması düzeltildi; yeni sipariş satırı alanları mevcut Go alanlarına eşlenir. Ayrıntılar: [CHANGELOG](CHANGELOG.md).
+>
+> Endpoint ve temel adres değerleri `WithEndpointOverrides(...)` ve `client.SetBaseURL(...)` ile değiştirilebilir. ([Detaylar](#api-değiştiyse-nasıl-uyarlanır))
 
 Go dili için Trendyol Marketplace REST API istemcisi.
 
@@ -27,7 +26,7 @@ client := trendyol.NewClient("SELLER_ID", "API_KEY", "API_SECRET", false)
 ## Kurulum
 
 ```bash
-go get github.com/vahaponur/trendyol-go
+go get github.com/vahaponur/trendyol-go@v0.3.0
 ```
 
 Go modules kullanıyorsanız paketi içe aktarın:
@@ -137,6 +136,44 @@ API_SECRET=YOUR_API_SECRET
 
 ---
 
+### Sipariş paketleri
+
+```go
+orders, page, err := client.Orders.List(ctx, trendyol.ListOrdersOptions{
+    Page: 0,
+    Size: 50,
+    Status: "Created",
+    OrderByField: "PackageLastModifiedDate",
+    OrderByDirection: "DESC",
+})
+```
+
+[Trendyol dokümanına](https://developers.trendyol.com/docs/sipariş-paketlerini-çekme-getshipmentpackages) göre eski `/orders` adresi 15 Ekim 2026'da kapanacaktır. V2 sayfa başına en fazla 200 paket ve toplam 10.000 paketlik erişim penceresi sunar; tarih aralığı en fazla 14 gündür ve son 1 aylık veri sorgulanabilir. `totalPages` erişilebilir pencerenin üzerinde olabilir. Büyük taramalar için stream kullanın.
+
+```go
+opts := trendyol.ListOrdersStreamOptions{Size: 50}
+for {
+    orders, page, err := client.Orders.ListStream(ctx, opts)
+    if err != nil { return err }
+    // orders içindeki paketleri işleyin.
+    _ = orders
+    if !page.HasMore { break }
+    if page.NextCursor == "" || page.NextCursor == opts.NextCursor {
+        return fmt.Errorf("Trendyol geçerli bir sonraki cursor döndürmedi")
+    }
+    opts.NextCursor = page.NextCursor
+    // Trendyol stream çağrıları arasında en az 5 saniye önerir.
+    select {
+    case <-ctx.Done(): return ctx.Err()
+    case <-time.After(5 * time.Second):
+    }
+}
+```
+
+[Stream](https://developers.trendyol.com/docs/sipariş-paketlerini-akış-ile-çekme) sıralaması sabit olarak son değişiklik tarihine göre DESC'dir. `NextCursor` opak bir değerdir; aynen geri gönderin ve aynı akış içinde boyutu/filtreleri değiştirmeyin. `LastModifiedStartDate`, `LastModifiedEndDate` ve virgülle ayrılmış `PackageItemStatuses` kullanılabilir. Son 3 aylık veri, en fazla 14 günlük aralıklarla sorgulanır; tarihler verilmezse son 14 gün döner. Stream tarih filtreleri **son değişiklik tarihini** kullanır.
+
+Yeni `lineId`, `stockCode`, `sellerId`, `lineGrossAmount`, `lineSellerDiscount`, `lineTyDiscount`, `vatRate`, `lineUnitPrice` alanları sırasıyla mevcut `OrderLine.ID`, `MerchantSKU`, `MerchantID`, `Amount`, `Discount`, `TyDiscount`, `VATBaseAmount`, `Price` alanlarına okunur. `ContentID` ayrıca sunulur; varyant kimliği olan `ProductCode` ile karıştırılmaz. `OrderAddress.Phone` mevcut `int64` tipini korur ve sayısal metin/sayı/boş metin/null kabul eder. `EtgbDate` metin tipini korur ve sayısal timestamp kabul eder. Eski webhook alanları da okunabilir; iki ad birlikte gelirse yeni alanın değeri kullanılır.
+
 ### Webhook Bildirimleri (Sipariş Olayları)
 
 Trendyol, sipariş paketleri belirli statülere ulaştığında (CREATED, SHIPPED vb.) tanımladığınız URL’ye **HTTP POST** isteği gönderir. SDK’daki `Webhooks` servisi ile abonelik yönetimi çok basittir:
@@ -182,7 +219,7 @@ _ = client.Webhooks.Delete(ctx, id)
 | Servis | Test Edilen Metotlar | Durum |
 |--------|---------------------|-------|
 | `Products` | `Create`, `GetByBarcode`, `List`, `Update`, `GetBatchStatus` | ✅ Çalışıyor |
-| `Orders`   | `List` | ✅ Çalışıyor |
+| `Orders`   | `List`, `ListLegacy`, `ListStream` | Otomatik HTTP/JSON uyumluluk testleri |
 | `Webhooks` | `Create`, `List`, `Update`, `Delete`, `Activate`, `Deactivate` | ✅ Çalışıyor |
 | Diğer tüm servisler | | ⚠️ Henüz manuel/entegrasyon testi yapılmadı |
 
