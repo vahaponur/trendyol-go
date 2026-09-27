@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 // UnmarshalJSON accepts both the current package fields and older webhook
@@ -44,11 +45,17 @@ func (o *Order) UnmarshalJSON(data []byte) error {
 }
 
 // UnmarshalJSON preserves the numeric Phone API while accepting the string,
-// empty and null phone representations returned by Trendyol.
+// empty, null and masked phone representations returned by Trendyol.
 func (a *OrderAddress) UnmarshalJSON(data []byte) error {
 	var fields map[string]json.RawMessage
 	if err := json.Unmarshal(data, &fields); err != nil {
 		return err
+	}
+	// A redacted phone is unavailable. Never turn its visible digits into a
+	// partial phone number; use the same zero value as an empty/null phone.
+	var phone string
+	if json.Unmarshal(fields["phone"], &phone) == nil && strings.Contains(phone, "*") {
+		fields["phone"] = json.RawMessage("0")
 	}
 	if err := normalizeIntegerField(fields, "phone"); err != nil {
 		return err

@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.3.1 — 2026-09-27
+
+### Fixed
+
+- Treat order-address phones containing masking asterisks (such as `"***"`) as unavailable (`Phone: 0`), matching empty/null phones. A masked shipment or invoice phone no longer prevents an entire order page from decoding.
+- Preserve numeric phone handling, other address fields and strict cargo tracking number validation. Add regression tests for fully/partially masked phones and mixed order pages.
+
 ## v0.3.0 — 2026-09-15
 
 ### Fixed

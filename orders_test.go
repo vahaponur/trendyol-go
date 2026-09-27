@@ -112,6 +112,50 @@ func TestOrderScalarVariants(t *testing.T) {
 	}
 }
 
+func TestOrderMaskedPhones(t *testing.T) {
+	for _, phone := range []string{"***", "**********", "05*****1234", "+90 5** *** ** **"} {
+		t.Run(phone, func(t *testing.T) {
+			value, err := json.Marshal(phone)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var o Order
+			payload := `{"shipmentPackageId":123,"shipmentAddress":{"phone":` + string(value) + `,"city":"İstanbul"},"invoiceAddress":{"phone":` + string(value) + `,"taxNumber":"1234567890"}}`
+			if err := json.Unmarshal([]byte(payload), &o); err != nil {
+				t.Fatal(err)
+			}
+			if o.ShipmentAddress.Phone != 0 || o.InvoiceAddress.Phone != 0 {
+				t.Fatal("masked phone must be unavailable, not a partial number")
+			}
+			if o.ID != 123 || o.ShipmentAddress.City != "İstanbul" || o.InvoiceAddress.TaxNumber != "1234567890" {
+				t.Fatal("unmasked order fields lost")
+			}
+			if err := json.Unmarshal([]byte(`{"cargoTrackingNumber":`+string(value)+`}`), &Order{}); err == nil {
+				t.Fatal("phone masking must not relax cargo tracking validation")
+			}
+		})
+	}
+}
+
+func TestOrdersListWithMaskedPhone(t *testing.T) {
+	calls := 0
+	client := testOrderClient(t, false, func(r *http.Request) (*http.Response, error) {
+		calls++
+		return orderResponse(`{"page":0,"size":50,"totalElements":2,"totalPages":1,"content":[{"shipmentPackageId":123,"shipmentAddress":{"phone":"***"},"invoiceAddress":{"phone":"***"}},` + currentOrderJSON + `]}`), nil
+	})
+	orders, page, err := client.Orders.List(context.Background(), ListOrdersOptions{Page: 0, Size: 50})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if calls != 1 || len(orders) != 2 || page.TotalElement != 2 {
+		t.Fatalf("masked phone disrupted order page: calls=%d orders=%d page=%+v", calls, len(orders), page)
+	}
+	if orders[0].ID != 123 || orders[0].ShipmentAddress.Phone != 0 || orders[0].InvoiceAddress.Phone != 0 {
+		t.Fatal("masked order decoded incorrectly")
+	}
+	assertCurrentOrder(t, orders[1])
+}
+
 type orderTransport func(*http.Request) (*http.Response, error)
 
 func (f orderTransport) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
